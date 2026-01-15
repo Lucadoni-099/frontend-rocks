@@ -1,62 +1,61 @@
 import { useEffect, useState } from "react";
 import { PokeAPI } from "./api";
 
-// Mappatura colori per tipo (stile vivace)
+// Mappatura dei colori per tipo
 const TYPE_COLORS: Record<string, string> = {
-  grass: "bg-green-400",
+  grass: "bg-green-500",
   fire: "bg-red-500",
-  water: "bg-blue-400",
-  bug: "bg-lime-400",
-  normal: "bg-stone-300",
-  poison: "bg-purple-400",
-  electric: "bg-yellow-300",
-  ground: "bg-amber-500",
-  fairy: "bg-pink-200",
-  fighting: "bg-orange-600",
-  psychic: "bg-pink-400",
-  rock: "bg-gray-500",
-  ghost: "bg-indigo-400",
-  ice: "bg-cyan-200",
-  dragon: "bg-violet-500",
-  steel: "bg-slate-300",
+  water: "bg-blue-500",
+  bug: "bg-lime-500",
+  normal: "bg-gray-400",
+  poison: "bg-purple-500",
+  electric: "bg-yellow-400",
+  ground: "bg-amber-600",
+  fairy: "bg-pink-300",
+  fighting: "bg-orange-700",
+  psychic: "bg-pink-500",
+  rock: "bg-stone-500",
+  ghost: "bg-violet-700",
+  ice: "bg-cyan-300",
+  dragon: "bg-indigo-600",
 };
 
-type PokemonData = {
+type Props = {
   id: number;
   image: string;
   name: string;
   types: string[];
 };
 
-
-const Card = ({ id, image, name, types }: PokemonData) => {
+export const Card: React.FC<Props> = ({ id, image, name, types }) => {
+  // Prendiamo il colore basandoci sul primo tipo del Pokémon
   const mainType = types[0];
   const bgColor = TYPE_COLORS[mainType] || "bg-gray-200";
 
   return (
-    <div className={`relative ${bgColor} w-56 h-72 flex flex-col items-center justify-center rounded-2xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-4 transition-transform hover:-translate-y-2 hover:rotate-1`}>
-    
-      <div className="absolute top-3 left-4 font-black text-black text-xl opacity-25">
+    <div className={`relative ${bgColor} w-64 h-80 text-center flex flex-col items-center justify-center rounded-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-4 transition-transform hover:-translate-y-2`}>
+      
+      {/* ID in alto a sinistra */}
+      <div className="absolute top-3 left-4 font-black text-black text-2xl opacity-30">
         #{id.toString().padStart(3, '0')}
       </div>
 
-      
-      <img 
-        src={image} 
-        alt={name} 
-        className="w-32 h-32 object-contain mb-3 drop-shadow-[0_5px_5px_rgba(0,0,0,0.3)]" 
-      />
+      {/* Immagine */}
+      <img src={image} alt={name} className="w-32 h-32 object-contain mb-4 drop-shadow-lg" />
 
-      
-      <h2 className="text-xl font-black uppercase tracking-tight text-black mb-3 truncate w-full text-center px-1">
+      {/* Nome */}
+      <h2 className="text-2xl font-black uppercase tracking-tighter text-black mb-2 italic">
         {name}
       </h2>
 
-    
-      <div className="flex gap-1.5">
-        {types.map((t) => (
-          <span key={t} className="px-2 py-0.5 bg-white/40 border-2 border-black rounded-lg text-[10px] font-black uppercase text-black">
-            {t}
+      {/* Badge dei tipi */}
+      <div className="flex gap-2">
+        {types.map((type) => (
+          <span 
+            key={type} 
+            className="px-3 py-1 bg-white/30 border-2 border-black rounded-md text-xs font-bold uppercase text-black"
+          >
+            {type}
           </span>
         ))}
       </div>
@@ -65,50 +64,48 @@ const Card = ({ id, image, name, types }: PokemonData) => {
 };
 
 export function Root() {
-  const [pokemons, setPokemons] = useState<PokemonData[]>([]);
+  const [pokemons, setPokemons] = useState<Props[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   
-    PokeAPI.listPokemons(100, 0)
+    // Ho aggiunto il limite a 50 per caricare più Pokémon
+    PokeAPI.listPokemons(50, 0) 
       .then(async (response) => {
-        const detailPromises = response.results.map(async (p: any) => {
-          const detail = await PokeAPI.getPokemonByName(p.name);
-          return {
-            id: detail.id,
-            image: detail.sprites?.other?.["official-artwork"]?.front_default || detail.sprites.front_default,
-            name: detail.name,
-            types: detail.types.map((t: any) => t.type.name),
-          };
-        });
-
-        const results = await Promise.all(detailPromises);
-        setPokemons(results);
+        const transformedPokemons = await Promise.all(
+          response.results.map(async (pokemon: any) => {
+            const pokemonDetail = await PokeAPI.getPokemonByName(pokemon.name);
+            return {
+              id: pokemonDetail.id,
+              image: pokemonDetail.sprites?.other?.["official-artwork"]?.front_default || "",
+              name: pokemonDetail.name,
+              types: pokemonDetail.types?.map((t: any) => t.type.name) || [],
+            };
+          })
+        );
+        setPokemons(transformedPokemons);
         setLoading(false);
       })
-      .catch((err) => console.error("Errore nel caricamento:", err));
+      .catch((error) => console.error("Error fetching data:", error));
   }, []);
 
   return (
-    <div className="min-h-screen bg-yellow-50 p-8">
-      {/* Header */}
-      <header className="mb-12">
-        <h1 className="text-6xl font-black uppercase italic tracking-tighter text-black">
-          Pokédex <span className="text-red-600">100</span>
-        </h1>
-        <div className="h-2 w-48 bg-black mt-2"></div>
-      </header>
+    <div className="min-h-screen bg-slate-100 p-10">
+      <h1 className="text-4xl font-black uppercase mb-10 border-b-8 border-black inline-block">
+        Pokédex 2026
+      </h1>
 
       {loading ? (
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 border-8 border-black border-t-red-500 rounded-full animate-spin"></div>
-          <span className="text-2xl font-black uppercase">Catturando i Pokémon...</span>
-        </div>
+        <div className="text-2xl font-bold animate-bounce">Caricamento Pokémon...</div>
       ) : (
-        
-        <div className="flex flex-wrap justify-start gap-8">
+        <div className="flex flex-wrap justify-start gap-10">
           {pokemons.map((pokemon) => (
-            <Card key={pokemon.id} {...pokemon} />
+            <Card
+              key={pokemon.id}
+              id={pokemon.id}
+              image={pokemon.image}
+              name={pokemon.name}
+              types={pokemon.types}
+            />
           ))}
         </div>
       )}
